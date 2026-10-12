@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Task Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>☁️ AWS Task Manager</h1>
+        <p>Organize your daily work efficiently</p>
+    </header>
+
+    <main class="container">
+        <section class="task-card">
+            <h2>Add a New Task</h2>
+
+            <form id="task-form">
+                <input
+                    type="text"
+                    id="task-input"
+                    placeholder="Enter your task..."
+                    maxlength="200"
+                    required
+                >
+                <button type="submit">Add Task</button>
+            </form>
+
+            <p id="message" role="status"></p>
+
+            <div class="task-summary">
+                <span>Total: <strong id="total-count">0</strong></span>
+                <span>Completed: <strong id="completed-count">0</strong></span>
+            </div>
+
+            <h2>My Tasks</h2>
+            <ul id="task-list"></ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built with HTML, CSS, JavaScript, Python, Docker and AWS</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
