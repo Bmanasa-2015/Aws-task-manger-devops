@@ -1,4 +1,6 @@
 
+const API_URL = "http://localhost:5000/api/tasks";
+
 const taskForm = document.getElementById("task-form");
 const taskInput = document.getElementById("task-input");
 const taskList = document.getElementById("task-list");
@@ -6,68 +8,110 @@ const message = document.getElementById("message");
 const totalCount = document.getElementById("total-count");
 const completedCount = document.getElementById("completed-count");
 
-let tasks = [];
-let nextId = 1;
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...options.headers
+        }
+    });
 
-function renderTasks() {
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || "Request failed");
+    }
+
+    return data;
+}
+
+async function loadTasks() {
+    const tasks = await apiRequest(API_URL);
     taskList.replaceChildren();
 
-    tasks.forEach((task) => {
+    for (const task of tasks) {
         const item = document.createElement("li");
         item.className = "task-item";
-        if (task.completed) item.classList.add("completed");
+
+        if (task.completed) {
+            item.classList.add("completed");
+        }
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = task.completed;
         checkbox.setAttribute("aria-label", "Mark task completed");
 
-        checkbox.addEventListener("change", () => {
-            task.completed = checkbox.checked;
-            renderTasks();
+        checkbox.addEventListener("change", async () => {
+            try {
+                await apiRequest(`${API_URL}/${task.id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        completed: checkbox.checked
+                    })
+                });
+
+                await loadTasks();
+                message.textContent = "Task updated.";
+            } catch (error) {
+                message.textContent = error.message;
+            }
         });
 
-        const label = document.createElement("span");
-        label.textContent = task.title;
+        const title = document.createElement("span");
+        title.textContent = task.title;
 
         const deleteButton = document.createElement("button");
         deleteButton.textContent = "Delete";
         deleteButton.className = "delete-button";
 
-        deleteButton.addEventListener("click", () => {
-            tasks = tasks.filter((t) => t.id !== task.id);
-            renderTasks();
-            message.textContent = "Task deleted.";
+        deleteButton.addEventListener("click", async () => {
+            try {
+                await apiRequest(`${API_URL}/${task.id}`, {
+                    method: "DELETE"
+                });
+
+                await loadTasks();
+                message.textContent = "Task deleted.";
+            } catch (error) {
+                message.textContent = error.message;
+            }
         });
 
-        item.append(checkbox, label, deleteButton);
+        item.append(checkbox, title, deleteButton);
         taskList.appendChild(item);
-    });
+    }
 
     totalCount.textContent = tasks.length;
     completedCount.textContent =
-        tasks.filter((task) => task.completed).length;
+        tasks.filter(task => task.completed).length;
 }
 
-taskForm.addEventListener("submit", (event) => {
+taskForm.addEventListener("submit", async event => {
     event.preventDefault();
 
     const title = taskInput.value.trim();
 
     if (!title) {
-        message.textContent = "Please enter a task.";
+        message.textContent = "Enter a task first.";
         return;
     }
 
-    tasks.push({
-        id: nextId++,
-        title: title,
-        completed: false
-    });
+    try {
+        await apiRequest(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ title })
+        });
 
-    taskInput.value = "";
-    message.textContent = "Task added successfully.";
-    renderTasks();
+        taskInput.value = "";
+        message.textContent = "Task added successfully.";
+        await loadTasks();
+    } catch (error) {
+        message.textContent = `Error: ${error.message}`;
+    }
 });
 
-renderTasks();
+loadTasks().catch(error => {
+    message.textContent = `Cannot connect to backend: ${error.message}`;
+});
