@@ -1,5 +1,7 @@
 
-const API_URL = "http://localhost:5000/api/tasks";
+#const API_URL = "http://localhost:5000/api/tasks";
+const API_URL = "http://3.7.46.138:5000/api/tasks";
+
 
 const taskForm = document.getElementById("task-form");
 const taskInput = document.getElementById("task-input");
