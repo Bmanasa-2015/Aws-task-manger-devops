@@ -19,28 +19,38 @@ A task-management web application deployed on AWS. The project demonstrates stat
 ## 2. Architecture
 
 ```mermaid
-flowchart TD
-    Browser[User browser]
-    S3[Amazon S3 static website\nHTML / CSS / JavaScript]
-    API[Flask REST API\nDocker on Amazon EC2 :5000]
-    RDS[(Amazon RDS for MySQL\nDatabase: appdb)]
+flowchart TB
+    Browser["User browser"]
 
-    Browser -->|Loads website| S3
-    Browser -->|HTTP API requests| API
-    API -->|MySQL TCP 3306| RDS
+    subgraph AWS["AWS runtime - ap-south-1"]
+        S3["Amazon S3<br>Static frontend<br>HTML / CSS / JavaScript"]
+        EC2["Amazon EC2<br>Dockerized Flask REST API<br>TCP port 5000"]
+        RDS[("Amazon RDS for MySQL<br>Database: appdb<br>Table: tasks")]
+    end
 
-    GH[GitHub repository]
-    Actions[GitHub Actions]
-    DH[Docker Hub\nmanasabolla/flask-backenddb]
-    OIDC[AWS IAM role via OIDC]
+    subgraph CICD["GitHub Actions CI/CD"]
+        Repo["GitHub repository<br>main branch"]
+        Tests["Run backend tests<br>pytest"]
+        Build["Build Docker image"]
+        DH["Docker Hub<br>flask-backenddb"]
+        Deploy["SSH deploy to EC2<br>health checks"]
+        FrontendJob["Frontend deployment job"]
+        OIDC["AWS IAM role<br>OIDC authentication"]
+    end
 
-    GH -->|Backend change| Actions
-    Actions -->|Run pytest| Actions
-    Actions -->|Build and push image| DH
-    Actions -->|SSH deploy and health checks| API
-    GH -->|Frontend change| Actions
-    Actions -->|OIDC role assumption| OIDC
-    OIDC -->|Upload frontend files| S3
+    Browser -->|"Load website"| S3
+    Browser -->|"REST API requests"| EC2
+    EC2 -->|"MySQL TCP 3306"| RDS
+
+    Repo -->|"Backend change"| Tests
+    Tests -->|"Tests pass"| Build
+    Build -->|"Publish tagged image"| DH
+    DH -->|"Pull image"| Deploy
+    Deploy -->|"Replace container"| EC2
+
+    Repo -->|"Frontend change"| FrontendJob
+    FrontendJob --> OIDC
+    OIDC -->|"Upload with aws s3 sync"| S3
 ```
 
 ### Request flow
